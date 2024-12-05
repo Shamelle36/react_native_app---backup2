@@ -2,6 +2,7 @@ import { View, Modal, Button, Text, StyleSheet, SafeAreaView, Image, Pressable, 
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { db, ref, onValue } from '../firebaseConfig';
+import Sound from 'react-native-sound';
 
 import './assets/images/logo_moms_cafe.png';
 import './assets/images/beverage.png';
@@ -44,6 +45,9 @@ const DetailsScreen = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [hoveredCategory, setHoveredCategory] = useState<string>('');
+  const [newNotification, setNewNotification] = useState(false);
+
+  let notificationSound: Sound | null = null;
 
   const incrementQuality = () => {
     setQuantity((prevQuantity) => prevQuantity + 1);
@@ -53,6 +57,48 @@ const DetailsScreen = () => {
     if (quantity > 1) {
       setQuantity((prevQuantity) => prevQuantity - 1);
     }
+  };
+
+  useEffect(() => {
+    notificationSound = new Sound('notification_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Failed to load the sound', error);
+      }
+    });
+
+    return () => {
+      if (notificationSound) {
+        notificationSound.release();  // Clean up the sound when the component unmounts
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const ordersRef = ref(db, 'orders');
+    
+    onValue(ordersRef, (snapshot) => {
+      const orders = snapshot.val();
+      if (orders) {
+        Object.values(orders).forEach(order => {
+          if (order.status === 'Completed') {
+            setNewNotification(true);  // Trigger the notification flag
+            if (notificationSound) {
+              notificationSound.play();  // Play the sound when new notification is triggered
+            }
+          }
+        });
+      }
+    });
+
+    return () => {
+      setNewNotification(false);  // Reset notification flag on unmount
+    };
+  }, [notificationSound]);
+
+
+  const handleNotificationClick = () => {
+    setNewNotification(false);  // Reset notification status
+    router.push('/orders');  // Navigate to the orders page
   };
 
   useEffect(() => {
@@ -71,6 +117,8 @@ const DetailsScreen = () => {
       }
     });
   }, []);
+
+
 
   useEffect(() => {
     console.log('Search Query:', searchQuery);
@@ -143,6 +191,17 @@ const DetailsScreen = () => {
   return (
     <ScrollView>
       <SafeAreaView style={styles.container}>
+
+      <View style={styles.notificationBellContainer}>
+          <TouchableOpacity onPress={handleNotificationClick}>
+            <Ionicons
+              name="notifications-outline"
+              size={30}
+              color={newNotification ? 'red' : 'black'}
+              style={styles.notificationBellIcon}
+            />
+          </TouchableOpacity>
+        </View>
 
       <SafeAreaView style={{flexDirection: 'row',justifyContent: 'space-between', alignItems: 'center', position: 'absolute', zIndex: 1, right: 0}}>
           <TextInput
@@ -342,6 +401,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F4ECD8',
+  },
+  notificationBellIcon: {
+    marginRight: 20,
+  },
+  notificationBellActive: {
+    color: 'red',
+  },
+  notificationBellContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
   },
   itemsContainer: {
     flexDirection: 'row',

@@ -29,7 +29,7 @@ const CartScreen = () => {
   
     let cartString;
   
-    // Check if `cart` is a string or array of strings
+    // Check if cart is a string or array of strings
     if (Array.isArray(cart)) {
       if (cart.length > 0) {
         cartString = cart[0]; // Use the first element of the array
@@ -38,7 +38,7 @@ const CartScreen = () => {
         return;
       }
     } else {
-      cartString = cart; // `cart` is already a string
+      cartString = cart; // cart is already a string
     }
   
     try {
@@ -124,6 +124,7 @@ const CartScreen = () => {
   
     
     const orderData = {
+      status: "Pending",
       items: cartItems, 
       total: calculateTotal(), 
       totalQuantity: calculateTotalQuantity(),
