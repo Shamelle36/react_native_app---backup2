@@ -116,7 +116,6 @@ const DetailsScreen = () => {
       const newCartItem: CartItem = { product: selectedProduct, quantity };
       const updatedCart = [...cart, newCartItem];
 
-      // Include special request if provided
       if (specialRequest) {
         newCartItem.product = { ...newCartItem.product, specialRequest };
       }
@@ -133,12 +132,12 @@ const DetailsScreen = () => {
   };
 
   const handleSpecialRequestPress = () => {
-    setIsSpecialRequestModalVisible(true); // Show the special request modal
+    setIsSpecialRequestModalVisible(true); 
   };
 
   const handleSpecialRequestSubmit = (request: string) => {
-    setSpecialRequest(request); // Update the special request
-    setIsSpecialRequestModalVisible(false); // Close the modal
+    setSpecialRequest(request); 
+    setIsSpecialRequestModalVisible(false); 
   };
 
   return (
@@ -155,7 +154,7 @@ const DetailsScreen = () => {
               width: '60%',}}
             placeholder="Search"
             value={searchQuery}
-            onChangeText={setSearchQuery} // Update search query as user types
+            onChangeText={setSearchQuery} 
           />
         </SafeAreaView>
 

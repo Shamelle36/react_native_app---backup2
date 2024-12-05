@@ -1,82 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { getDatabase, ref, onValue, get } from 'firebase/database';
-import { useGlobalSearchParams } from 'expo-router';
-import { ListRenderItem } from 'react-native';
-
-interface OrderItem {
-  product?: {
-    id?: string;
-    name?: string;
-    price?: number;
-  };
-  quantity?: number;
-}
-
+import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
+import { getDatabase, ref, onValue } from "firebase/database";
 
 const OrderScreen = () => {
-  const [items, setItems] = useState<OrderItem[]>([]); // State to store items for the specific order
-  const [loading, setLoading] = useState(true);
-  const { orderId } = useGlobalSearchParams();
+  const [orders, setOrders] = useState([]);
 
-  console.log("Received orderId:", orderId); 
+  useEffect(() => {
+    const db = getDatabase();
+    const ordersRef = ref(db, 'orders');
 
- useEffect(() => {
-  console.log("OrderScreen Mounted");
-  if (!orderId) {
-    console.error("No orderId provided!");
-    return;
-  }
-  const db = getDatabase();
-  const orderRef = ref(db, `orders/${orderId}`);
-  console.log("Fetching data from:", `orders/${orderId}`);
-  
-  get(orderRef)
-    .then((snapshot) => {
-      console.log("Fetched data:", snapshot.val());
-    })
-    .catch((error) => {
-      console.error("Firebase fetch error:", error);
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const ordersList = Object.entries(data).map(([key, value]) => ({
+          id: key, // Firebase-generated unique ID
+          ...value,
+        }));
+        setOrders(ordersList);
+      }
     });
-}, [orderId]);
 
+    return () => unsubscribe();
+  }, []);
 
-  const renderItem: ListRenderItem<OrderItem> = ({ item }) => {
-    const price = item.product?.price; // Check if price exists
-    const formattedPrice = typeof price === 'number' ? `$${price.toFixed(2)}` : 'N/A'; // Format price or display 'N/A'
-
-    return (
-      <View style={styles.item}>
-        <Text style={styles.itemName}>{item.product?.name || 'Unknown Product'}</Text>
-        <Text style={styles.itemQuantity}>Quantity: {item.quantity || 0}</Text>
-        <Text style={styles.itemPrice}>Price: {formattedPrice}</Text>
+  const renderOrderItem = ({ item }) => (
+    <View style={styles.itemContainer}>
+      {item.product?.imageFile && (
+        <Image
+          source={{ uri: item.product.imageFile }}
+          style={styles.productImage}
+        />
+      )}
+      <View style={styles.itemDetails}>
+        <Text style={styles.productName}>Product: {item.product?.name || 'N/A'}</Text>
+        <Text>Quantity: {item.quantity}</Text>
+        <Text>Total: ${item.total}</Text>
       </View>
-    );
-  };
+    </View>
+  );
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.error}>Loading order details...</Text>
-      </View>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.error}>No items found for this order.</Text>
-      </View>
-    );
-  }
+  const renderOrder = ({ item }) => (
+    <View style={styles.orderContainer}>
+      <FlatList
+        data={item.items}
+        renderItem={renderOrderItem}
+        keyExtractor={(item, index) => index.toString()} // Index as key for `items`
+      />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Order Summary</Text>
+      <Text style={styles.title}>Orders</Text>
       <FlatList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${index}-${item.product?.id || 'unknown'}`}
+        data={orders}
+        renderItem={renderOrder}
+        keyExtractor={(item) => item.id} // Firebase unique ID as key
       />
     </View>
   );
@@ -86,33 +65,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f4ecd8',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
   },
-  item: {
+  orderContainer: {
     padding: 15,
-    marginBottom: 10,
-    backgroundColor: '#F4ECD8',
-    borderRadius: 10,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  itemName: {
+  orderTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  itemQuantity: {
-    fontSize: 16,
-  },
-  itemPrice: {
-    fontSize: 16,
     color: '#800020',
+    marginBottom: 10,
   },
-  error: {
-    fontSize: 18,
-    color: 'red',
+  itemContainer: {
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#f4f4f4',
+    marginBottom: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  productImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  itemDetails: {
+    flex: 1,
+  },
+  productName: {
+    fontWeight: 'bold',
+    color: '#333',
   },
 });
 

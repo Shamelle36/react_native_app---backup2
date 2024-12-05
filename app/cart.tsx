@@ -124,7 +124,6 @@ const CartScreen = () => {
   
     
     const orderData = {
-      orderId,
       items: cartItems, 
       total: calculateTotal(), 
       totalQuantity: calculateTotalQuantity(),
@@ -137,7 +136,7 @@ const CartScreen = () => {
       resetCart(); 
       router.push({
         pathname: '/orders', 
-        params: { orderId }  // Passing the orderData to the Order page
+        params: { cart: JSON.stringify(cartItems) }  // Passing the orderData to the Order page
       });
     } catch (error) {
       console.error("Error placing order:", error);
